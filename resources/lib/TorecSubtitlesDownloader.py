@@ -49,7 +49,7 @@ class SubtitlePage(object):
         self.options = self._parseOptions(data)
         
     def _parseOptions(self, data):
-        subtitleSoup = bs4.BeautifulSoup(data)
+        subtitleSoup = bs4.BeautifulSoup(data, "html.parser")
         subtitleOptions = subtitleSoup("div", {'class' : 'download_box' })[0].findAll("option")
         return map(lambda x: SubtitleOption(x.string.strip(), x["value"]), subtitleOptions)
         
