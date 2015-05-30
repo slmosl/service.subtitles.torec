@@ -97,6 +97,7 @@ def search(item):
 def download(page_id, subtitle_id,filename, stack=False):
     files = glob.glob(os.path.join(__temp__, "*.srt"))
     for f in files:
+      f = f.encode('utf8', 'replace')
       log(__name__, "deleting %s" % f)
       os.remove(f)
 
