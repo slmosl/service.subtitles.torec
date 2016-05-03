@@ -31,7 +31,7 @@ xbmcvfs.mkdirs(__temp__)
 
 sys.path.append (__resource__)
 
-from SubtitleHelper import log, build_search_string, normalizeString
+from SubtitleHelper import log, build_search_string, normalizeString, parse_rls_title, clean_title
 from TorecSubtitlesDownloader import TorecSubtitlesDownloader
     
 def convert_to_utf(file):
@@ -212,6 +212,10 @@ if params['action'] == 'search' or params['action'] == 'manualsearch':
   
   log(__scriptname__, "%s" % item)
   
+  # clean title + tvshow params
+  clean_title(item)
+  parse_rls_title(item)
+  
   search(item)  
 
 elif params['action'] == 'download':
@@ -222,4 +226,3 @@ elif params['action'] == 'download':
   
   
 xbmcplugin.endOfDirectory(int(sys.argv[1]))
-
