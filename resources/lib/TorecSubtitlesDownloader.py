@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import cookielib
 import datetime
 import re
@@ -5,48 +7,53 @@ import time
 import urllib
 import urllib2
 import zlib
+import json
 
 import bs4
-import xbmc
-import xbmcaddon
 
 from SubtitleHelper import log
 
-__addon__ = xbmcaddon.Addon()
-__version__ = __addon__.getAddonInfo('version')  # Module version
-__scriptname__ = __addon__.getAddonInfo('name')
-__language__ = __addon__.getLocalizedString
-
 class SubtitleOption(object):
-    def __init__(self, name, id):
-        self.name = name
-        self.id = id
+    def __init__(self, subtitle_option_row):
+        onclick_action_string = subtitle_option_row.find("td", { "class" : "desktop" }).find("button").get("onclick")
+        params_match = re.match("downloadSub\(\'(?P<option_id>\w*)\',(?P<sub_id>\d+),", onclick_action_string)
+        if not params_match:
+            return
+
+        self.name      = subtitle_option_row.find("td", { "class" : "version" }).contents[1].strip()
+        self.option_id = params_match.group("option_id")
+        self.sub_id    = params_match.group("sub_id")
 
     def __repr__(self):
         return "%s" % self.name
 
-class SubtitlePage(object):
-    def __init__(self, id, name, url, data):
-        self.id = id
-        self.name = name
-        self.url = url
+class TVShowPage():
+    def __init__(self, data):
+        self.data = data
+
+    def fetch_url(self, season_number, episode_number):
+        subtitle_soup = bs4.BeautifulSoup(self.data, "html.parser")
+        episode_options = subtitle_soup(
+            "div", {
+                'id': 'tabs4-season%s' % season_number
+            }
+        )[0].findAll("a")
+
+        episode_option = next((episode_option for episode_option in episode_options if (episode_option.contents[0] == u'פרק %s' % episode_number)), None)
+        if not episode_option:
+            return None
+
+        return episode_option['href']
+
+class SubtitlesPage():
+    def __init__(self, data):
         self.options = self._parse_options(data)
 
     def _parse_options(self, data):
-        subtitle_soup = bs4.BeautifulSoup(data, "html.parser")
-        subtitle_options = subtitle_soup(
-            "div", {
-                'class': 'download_box'
-            }
-        )[0].findAll("option")
-        filtered_subtitle_options = filter(
-            lambda x: x.get("value") is not None, subtitle_options
-        )
-        return map(
-            lambda x: SubtitleOption(x.string.strip(), x["value"]),
-            filtered_subtitle_options
-        )
-
+        subtitles_soup = bs4.BeautifulSoup(data, "html.parser")
+        subtitle_options_rows = subtitles_soup.findAll("tr", {"id" : re.compile('dlRow_.*')})
+    
+        return map(lambda subtitle_option_row: SubtitleOption(subtitle_option_row), subtitle_options_rows)
 
 class Response(object):
     def __init__(self, response):
@@ -101,21 +108,12 @@ class FirefoxURLHandler(object):
         login_url = "http://www.torec.net/login.asp"
         response = self.opener.open(login_url, login_data)
         content = ''.join(response.readlines())
-        if username not in content:
-            xbmc.executebuiltin(
-                (u'Notification(%s,%s)' %
-                 (__scriptname__, __language__(32005))).encode('utf-8')
-
-            )
-            return False
-        return True
-
+        return username in content
 
 class TorecSubtitlesDownloader(FirefoxURLHandler):
     DEFAULT_SEPERATOR = " "
-    BASE_URL          = "http://www.torec.net"
+    BASE_URL          = "http://www.xn--9dbf0cd.net"
     SUBTITLE_PATH     = "sub.asp?sub_id="
-    USER_AUTH_JS_URL  = "http://www.torec.net/gjs/subw.js"
     DEFAULT_COOKIE    = (
         "Torec_NC_sub_%(subId)s=sub=%(current_datetime)s; Torec_NC_s="
         "%(screen_width)d"
@@ -127,82 +125,97 @@ class TorecSubtitlesDownloader(FirefoxURLHandler):
     def _build_default_cookie(self, sub_id):
         current_time = datetime.datetime.now().strftime("%m/%d/%Y+%I:%M:%S+%p")
         return self.DEFAULT_COOKIE % {
-            "screen_width": 1760,
+            "screen_width": 1440,
             "subId": sub_id,
             "current_datetime": current_time
         }
 
-    def _get_user_auth(self):
-        user_auth_text = self.opener.open(self.USER_AUTH_JS_URL).read()
-        return re.search(r"userAuth='(.*)';", user_auth_text).group(1)
+    def _get_user_auth(self, subw_text):
+        return re.search(r"userAuth='(.*)';", subw_text).group(1)
+
+    def _get_time_waited(self, subw_text):
+        return re.search(r"seconds\s+=\s+(\d+);", subw_text).group(1)
 
     def _request_subtitle(self, sub_id):
-         params = {
+        params = {
             "sub_id"  : sub_id, 
             "s"       : 1440
-         }
+        }
 
-         return self.opener.open("%s/ajax/sub/guest_time.asp" % self.BASE_URL, urllib.urlencode(params)).read()
+        response = self.opener.open("%s/ajax/sub/guest_time.asp" % self.BASE_URL, urllib.urlencode(params))
+        data     = response.read()
 
-    def search(self, movie_name):
-        santized_name = self.sanitize(movie_name)
-        log(__name__, "Searching for %s" % santized_name)
-        subtitle_page = self.search_by_movie_name(santized_name)
-        if subtitle_page is None:
-            log(__name__, "Couldn't find relevant subtitle page")
-            return None
-        else:
-            log(__name__, "Found relevant meta data")
-            return subtitle_page
+        return data
 
-    def search_by_movie_name(self, movie_name):
-        """
-        Search for movie subtitle
+    def _fetch_main_url(self, tvshow_name):
+        search_response = self.opener.open(
+            "%s/ajax/search/acSearch.asp" % self.BASE_URL,
+            urllib.urlencode({"query": tvshow_name }))
 
-        :param movie_name:
-        :return:
-        """
-        response = self.opener.open(
-            "%s/ssearch.asp" % self.BASE_URL,
-            urllib.urlencode({"search": movie_name})
-        )
-        data = response.read()
-        match = re.search('sub\.asp\?sub_id=(\w+)', data)
-        if not match:
+        suggestions = search_response.read()
+        if not suggestions:
+            log(__name__, "couldn't find suggestions for query %s" % tvshow_name)
             return None
 
-        id_ = match.groups()[0]
-        sub_url = "%s/%s%s" % (self.BASE_URL, self.SUBTITLE_PATH, id_)
-        subtitle_data = self.opener.open(sub_url)
-        subtitle_data = subtitle_data.read()
-        return SubtitlePage(id_, movie_name, sub_url, subtitle_data)
+        try:
+            json_suggestions = json.loads(suggestions)
+            return json_suggestions["suggestions"][0]["data"]
+        except ValueError, e:
+            return None
 
-    def get_download_link(self, sub_id, option_id, persist=True):        
-        response = None
-        data = None
+    def _fetch_episode_url(self, series_url, season_number, episode_number):
+        series_page_response = self.opener.open(
+            "%s/%s" % (self.BASE_URL, series_url))
+        series_page_data = series_page_response.read()
+
+        tvshow_page = TVShowPage(series_page_data)
+        return tvshow_page.fetch_url(season_number, episode_number)
+
+    def _fetch_subtitles_options(self, subtitles_page_url):
+        subtitles_page_response = self.opener.open("%s/%s" % (self.BASE_URL, subtitles_page_url))
+        subtitles_page_data = subtitles_page_response.read()
+
+        subtitles_page = SubtitlesPage(subtitles_page_data)
+        return subtitles_page.options
+
+    def search_tvshow(self, tvshow_name, season_number, episode_number):
+        main_url = self._fetch_main_url(tvshow_name)
+        if not main_url:
+            log(__name__, "couldn't find main URL for %s" % tvshow_name)
+            return None
+
+        episode_url = self._fetch_episode_url(main_url, season_number, episode_number)
+        if not episode_url:
+            log(__name__, "couldn't find episode URL for tvshow name %s, season %s episode %s" % (tvshow_name, season_number, episode_number))
+            return None            
         
-        params = {
+        return self._fetch_subtitles_options(episode_url)
+
+    def search_movie(self, movie_name):
+        main_url = self._fetch_main_url(movie_name)
+        if not main_url:
+            log(__name__, "couldn't find main URL for %s" % movie_name)
+            return None
+
+        return self._fetch_subtitles_options(main_url)
+
+    def get_download_link(self, sub_id, option_id):
+        params    = {
             "sub_id":     sub_id,
             "code":       option_id,
             "sh":         "yes",
             "guest":      self._request_subtitle(sub_id),
-            "timewaited": "11",
-            "userAuth":   self._get_user_auth()
+            "timewaited": 9
         }
 
-        for i in xrange(16):
-            response = self.opener.open(
-                "%s/ajax/sub/downloadun.asp" % self.BASE_URL, urllib.urlencode(params),
-            )
-            data = response.read()
-            if len(data) != 0 or not persist:
-                break
-            time.sleep(1)
-        if data:
-            return data
-        return response
+        response = self.opener.open("%s/ajax/sub/downloadun.asp" % self.BASE_URL, urllib.urlencode(params))
+        return response.read()
 
     def download(self, download_link):
+        if not download_link:
+            log(__name__, "no download link found")
+            return None, None
+
         response = self.opener.open(
             "%s%s" % (self.BASE_URL, download_link)
         )
@@ -214,7 +227,7 @@ class TorecSubtitlesDownloader(FirefoxURLHandler):
 
     def sanitize(self, name):
         cleaned_name = re.sub('[\']', '', name.upper())
-        return re.sub('[\.\[\]\-]', self.DEFAULT_SEPERATOR, cleaned_name)
+        return re.sub('[\.\[\]]', self.DEFAULT_SEPERATOR, cleaned_name)
 
     def find_most_relevant_option(self, name, subtitles_options):
         tokenized_name = self.sanitize(name).split()
@@ -234,11 +247,7 @@ class TorecSubtitlesDownloader(FirefoxURLHandler):
 
         return most_relevant_option
 
-    def get_best_match_id(self, name, subtitle_page):
-        most_relevant_option = self.find_most_relevant_option(
-            name, subtitle_page.options
-        )
-        return (
-            most_relevant_option.id if most_relevant_option is not None else
-            None
-        )
+    def get_best_match_id(self, name, subtitles_options):
+        most_relevant_option = self.find_most_relevant_option(name, subtitles_options)
+
+        return (most_relevant_option.option_id if most_relevant_option is not None else None)
