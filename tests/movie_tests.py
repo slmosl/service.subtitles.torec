@@ -9,9 +9,9 @@ import unittest
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "/../resources/lib")
 
 from TorecSubtitlesDownloader import TorecSubtitlesDownloader
-from SubtitleHelper import build_search_string, convert_to_utf
+from SubtitleHelper import convert_to_utf
 
-class TVShowTests(unittest.TestCase):
+class MovieTests(unittest.TestCase):
 	@classmethod
 	def setUpClass(self):
 		self.downloader  = TorecSubtitlesDownloader()

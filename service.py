@@ -39,7 +39,7 @@ xbmcvfs.mkdirs(__temp__)
 
 sys.path.append(__resource__)
 
-from SubtitleHelper import log, build_search_string, normalize_string, convert_to_utf
+from SubtitleHelper import log, normalize_string, convert_to_utf
 from TorecSubtitlesDownloader import TorecSubtitlesDownloader
 
 def search(item):

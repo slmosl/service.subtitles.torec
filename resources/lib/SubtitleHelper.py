@@ -1,42 +1,19 @@
 # -*- coding: utf-8 -*- 
 
-import codecs
 import urllib
+import codecs
 import unicodedata
 
-# import xbmcaddon
-# import xbmc
+import xbmcaddon
+import xbmc
 
-# __addon__ = xbmcaddon.Addon()
-# __version__ = __addon__.getAddonInfo('version')  # Module version
-# __scriptname__ = __addon__.getAddonInfo('name')
+__addon__ = xbmcaddon.Addon()
+__version__ = __addon__.getAddonInfo('version')  # Module version
+__scriptname__ = __addon__.getAddonInfo('name')
 
 def log(module, msg):
-    # xbmc.log((u"### [%s] - %s" % (module, msg,)).encode('utf-8'),
-    # level=xbmc.LOGDEBUG)
+    xbmc.log((u"### [%s] - %s" % (module, msg,)).encode('utf-8'), level=xbmc.LOGDEBUG)
     print (u"### [%s] - %s" % (module, msg,)).encode('utf-8')
-
-
-def build_search_string(item):
-    if item['mansearch']:
-        search_string = urllib.unquote(item['mansearchstr'])
-    elif len(item['tvshow']) > 0:
-        search_string = (
-            u"%s- עונה %d (פרק %d)" % (
-                item['tvshow'], int(item['season']), int(item['episode']),
-            )
-        ).replace(" ", "+")
-    else:
-        if str(item['year']) == "":
-            item['title'], item['year'] = xbmc.getCleanMovieTitle(
-                item['title']
-            )
-    
-        search_string = item['title'].replace(" ", "+")
-    
-    log(__name__, "Search String [ %s ]" % (search_string,))
-    return search_string
-    
     
 def normalize_string(str):
     return unicodedata.normalize(
