@@ -143,9 +143,7 @@ class TorecSubtitlesDownloader(FirefoxURLHandler):
         }
 
         response = self.opener.open("%s/ajax/sub/guest_time.asp" % self.BASE_URL, urllib.urlencode(params))
-        data     = response.read()
-
-        return data
+        return response.read()
 
     def _fetch_main_url(self, tvshow_name):
         search_response = self.opener.open(
