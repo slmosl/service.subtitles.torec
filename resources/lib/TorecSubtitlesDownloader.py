@@ -146,7 +146,7 @@ class TorecSubtitlesDownloader(FirefoxURLHandler):
         return response.read()
 
     def _fetch_main_url(self, name):
-        log(__name__, "fetching main url for name %s", name)
+        log(__name__, "fetching main url for name %s" % name)
         search_response = self.opener.open(
             "%s/ajax/search/acSearch.asp" % self.BASE_URL,
             urllib.urlencode({"query": name }))
