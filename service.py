@@ -51,10 +51,11 @@ def search(item):
 
     try:
         search_start_time = time.time()
-        if item['tvshow'] != ""
+        if item['tvshow'] != "":
             subtitles_options = downloader.search_tvshow(item['tvshow'], item['season'], item['episode'])
-        else
-            subtitles_options = downloader.search_movie(item['title'])
+        else:
+            title, year = xbmc.getCleanMovieTitle(item['title'])
+            subtitles_options = downloader.search_movie(title)
                     
         log(__name__, "search took %f" % (time.time() - search_start_time))
     except Exception as e:

@@ -145,14 +145,15 @@ class TorecSubtitlesDownloader(FirefoxURLHandler):
         response = self.opener.open("%s/ajax/sub/guest_time.asp" % self.BASE_URL, urllib.urlencode(params))
         return response.read()
 
-    def _fetch_main_url(self, tvshow_name):
+    def _fetch_main_url(self, name):
+        log(__name__, "fetching main url for name %s", name)
         search_response = self.opener.open(
             "%s/ajax/search/acSearch.asp" % self.BASE_URL,
-            urllib.urlencode({"query": tvshow_name }))
+            urllib.urlencode({"query": name }))
 
         suggestions = search_response.read()
         if not suggestions:
-            log(__name__, "couldn't find suggestions for query %s" % tvshow_name)
+            log(__name__, "couldn't find suggestions for query %s" % name)
             return None
 
         try:
