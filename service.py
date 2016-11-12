@@ -207,7 +207,7 @@ if params['action'] == 'search' or params['action'] == 'manualsearch':
         item['season'] = ""
         item['episode'] = ""
         item['tvshow'] = ""
-        item['title'] = "SearchFor..."
+        item['title'] = "SearchFor..." #Needed to avoid showing previous search result.
         item['file_original_path'] = ""
         item['3let_language'] = []
 
