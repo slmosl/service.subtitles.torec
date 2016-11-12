@@ -33,3 +33,23 @@ def convert_to_utf(file):
             output.write(srt_data)
     except UnicodeDecodeError:
         log(__name__, "got unicode decode error with reading subtitle data")
+
+def normalizeString(str):
+    return unicodedata.normalize(
+        'NFKD', unicode(unicode(str, 'utf-8'))
+    ).encode('utf-8', 'ignore')
+
+def check_and_parse_if_title_is_TVshow(manualTitle):
+    try:
+        tempShow,tempSE = manualTitle.split("%20")
+
+        indexS = tempSE.index("S")
+        indexE = tempSE.find("E")
+
+        tempS = tempSE[indexS+1:indexE]
+        tempE = tempSE[indexE+1:]
+
+        return [tempShow, tempS, tempE]
+
+    except:
+        return ["NotTVShow", "0", "0"]
