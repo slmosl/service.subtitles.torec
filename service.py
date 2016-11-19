@@ -38,7 +38,7 @@ xbmcvfs.mkdirs(__temp__)
 
 sys.path.append(__resource__)
 
-from SubtitleHelper import log, normalize_string, convert_to_utf, normalizeString, check_and_parse_if_title_is_TVshow
+from SubtitleHelper import log, normalize_string, convert_to_utf, check_and_parse_if_title_is_TVshow
 from TorecSubtitlesDownloader import TorecSubtitlesDownloader
 
 def search(item):
@@ -59,12 +59,13 @@ def search(item):
                 subtitles_options = downloader.search_movie(title)
         else:
             item['tvshow'], item['season'], item['episode'] = check_and_parse_if_title_is_TVshow(item['title'])
-            subtitles_options = downloader.search_tvshow(item['tvshow'], int(item['season']), int(item['episode']))
-            if (subtitles_options == None): # This is a movie title
+            if (item['tvshow'] == "NotTVShow"):
                 item['title'] = item['title'].replace("%20", "%2b") # " " to "+"
                 title, year = xbmc.getCleanMovieTitle(item['title'])
                 subtitles_options = downloader.search_movie(title)
-                    
+            else:
+                subtitles_options = downloader.search_tvshow(item['tvshow'], int(item['season']), int(item['episode']))
+                                    
         log(__name__, "search took %f" % (time.time() - search_start_time))
     except Exception as e:
         log(
@@ -207,13 +208,13 @@ if params['action'] == 'search' or params['action'] == 'manualsearch':
         item['season'] = ""
         item['episode'] = ""
         item['tvshow'] = ""
-        item['title'] = "SearchFor..." #Needed to avoid showing previous search result.
+        item['title'] = "SearchFor..." # Needed to avoid showing previous search result.
         item['file_original_path'] = ""
         item['3let_language'] = []
 
     if item['title'] == "":
         log(__name__, "VideoPlayer.OriginalTitle not found")
-        item['title'] = normalizeString(xbmc.getInfoLabel("VideoPlayer.Title"))  # no original title, get just Title
+        item['title'] = normalize_string(xbmc.getInfoLabel("VideoPlayer.Title"))  # no original title, get just Title
 
     if 'searchstring' in params:
         item['mansearch'] = True
