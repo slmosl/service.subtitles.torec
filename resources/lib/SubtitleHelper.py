@@ -40,7 +40,7 @@ def check_and_parse_if_title_is_TVshow(manualTitle):
     try:
         manualTitle = manualTitle.replace("%20", " ")
 
-        matchShow = re.search(r'(?i)^(.*?)\sS\d\d', manualTitle)
+        matchShow = re.search(r'(?i)^(.*?)\sS\d', manualTitle)
         if matchShow == None:
             return ["NotTVShow", "0", "0"]
         else:
