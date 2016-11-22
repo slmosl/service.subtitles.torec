@@ -62,3 +62,32 @@ def check_and_parse_if_title_is_TVshow(manualTitle):
 
     except:
         return ["NotTVShow", "0", "0"]
+
+def take_title_from_focused_item():
+    try:
+        labelType = xbmc.getInfoLabel("ListItem.DBTYPE")  #movie/tvshow/season/episode
+        labelMovieTitle = xbmc.getInfoLabel("ListItem.OriginalTitle")
+        labelYear = xbmc.getInfoLabel("ListItem.Year")
+        labelTVShowTitle = xbmc.getInfoLabel("ListItem.TVShowTitle")
+        labelSeason = xbmc.getInfoLabel("ListItem.Season")
+        labelEpisode = xbmc.getInfoLabel("ListItem.Episode")
+
+        if labelType == 'movie':
+            if labelMovieTitle and labelYear:
+                labelMovie = labelMovieTitle + "%20" + labelYear
+                return labelMovie
+            else:
+                return "SearchFor..."
+
+        elif labelType == 'episode':
+            if labelTVShowTitle and labelSeason and labelEpisode:
+                labelShow = ("%s S%.2dE%.2d" % (labelTVShowTitle, int(labelSeason), int(labelEpisode))).replace(" ", "%20")
+                return labelShow
+            else:
+                return "SearchFor..."
+    
+        else:
+            return "SearchFor..."  # Needed to avoid showing previous search result => In order to present "No Subtitles Found" result.
+    
+    except:
+            return "SearchFor..."

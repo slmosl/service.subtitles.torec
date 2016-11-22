@@ -38,7 +38,7 @@ xbmcvfs.mkdirs(__temp__)
 
 sys.path.append(__resource__)
 
-from SubtitleHelper import log, normalize_string, convert_to_utf, check_and_parse_if_title_is_TVshow
+from SubtitleHelper import log, normalize_string, convert_to_utf, check_and_parse_if_title_is_TVshow, take_title_from_focused_item
 from TorecSubtitlesDownloader import TorecSubtitlesDownloader
 
 def search(item):
@@ -208,7 +208,8 @@ if params['action'] == 'search' or params['action'] == 'manualsearch':
         item['season'] = ""
         item['episode'] = ""
         item['tvshow'] = ""
-        item['title'] = "SearchFor..." # Needed to avoid showing previous search result.
+        item['title'] = take_title_from_focused_item()
+        item['mansearch'] = True
         item['file_original_path'] = ""
         item['3let_language'] = []
 
