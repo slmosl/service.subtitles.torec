@@ -203,7 +203,6 @@ if params['action'] == 'search' or params['action'] == 'manualsearch':
     else:
         item['temp'] = False
         item['rar'] = False
-        item['mansearch'] = False
         item['year'] = ""
         item['season'] = ""
         item['episode'] = ""
