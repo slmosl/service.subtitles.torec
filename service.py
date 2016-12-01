@@ -223,9 +223,8 @@ if params['action'] == 'search' or params['action'] == 'manualsearch':
     for lang in unicode(urllib.unquote(params['languages']), 'utf-8').split(","):
         item['3let_language'].append(xbmc.convertLanguage(lang, xbmc.ISO_639_2))
 
-    log(__name__, "Item before cleaning: \n    %s" % item)
-
     if xbmc.Player().isPlaying():
+        log(__name__, "Item before cleaning: \n    %s" % item)
         # clean title + tvshow params
         clean_title(item)
         parse_rls_title(item)
