@@ -225,9 +225,10 @@ if params['action'] == 'search' or params['action'] == 'manualsearch':
 
     log(__name__, "Item before cleaning: \n    %s" % item)
 
-    # clean title + tvshow params
-    clean_title(item)
-    parse_rls_title(item)
+    if xbmc.Player().isPlaying():
+        # clean title + tvshow params
+        clean_title(item)
+        parse_rls_title(item)
 
     if item['episode'].lower().find("s") > -1:  # Check if season is "Special"
         item['season'] = "0"
