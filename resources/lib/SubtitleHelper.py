@@ -72,38 +72,11 @@ def take_title_from_focused_item():
     labelTVShowTitle = xbmc.getInfoLabel("ListItem.TVShowTitle")
     labelSeason = xbmc.getInfoLabel("ListItem.Season")
     labelEpisode = xbmc.getInfoLabel("ListItem.Episode")
-<<<<<<< HEAD
-<<<<<<< HEAD
-    isItMovie = False
-    isItEpisode = False
     labelType = xbmc.getInfoLabel("ListItem.DBTYPE")  #movie/tvshow/season/episode
-    if labelType:
-        if labelType == 'movie':
-            isItMovie = True
-            isItEpisode = False
-        elif labelType == 'episode':
-            isItMovie = False
-            isItEpisode = True
-    else:
-        if xbmc.getCondVisibility("Container.Content(movies)"):
-            isItMovie = True
-            isItEpisode = False
-        elif xbmc.getCondVisibility("Container.Content(episodes)"):
-            isItMovie = False
-            isItEpisode = True
-=======
     isItMovie = xbmc.getCondVisibility("Container.Content(movies)") or labelType == 'movie'
     isItEpisode = xbmc.getCondVisibility("Container.Content(episodes)") or labelType == 'episode'
->>>>>>> refs/remotes/XBMCil/master
-
-    title = 'SearchFor ...'
-=======
-    labelType = xbmc.getInfoLabel("ListItem.DBTYPE")  #movie/tvshow/season/episode	
-    isItMovie = labelType == 'movie' or xbmc.getCondVisibility("Container.Content(movies)")
-    isItEpisode = labelType == 'episode' or xbmc.getCondVisibility("Container.Content(episodes)")
 
     title = 'SearchFor...'
->>>>>>> origin/master
     if isItMovie and labelMovieTitle and labelYear:
         title = labelMovieTitle + " " + labelYear
     elif isItEpisode and labelTVShowTitle and labelSeason and labelEpisode:
