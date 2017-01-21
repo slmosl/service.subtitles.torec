@@ -72,6 +72,7 @@ def take_title_from_focused_item():
     labelTVShowTitle = xbmc.getInfoLabel("ListItem.TVShowTitle")
     labelSeason = xbmc.getInfoLabel("ListItem.Season")
     labelEpisode = xbmc.getInfoLabel("ListItem.Episode")
+<<<<<<< HEAD
     isItMovie = False
     isItEpisode = False
     labelType = xbmc.getInfoLabel("ListItem.DBTYPE")  #movie/tvshow/season/episode
@@ -89,6 +90,10 @@ def take_title_from_focused_item():
         elif xbmc.getCondVisibility("Container.Content(episodes)"):
             isItMovie = False
             isItEpisode = True
+=======
+    isItMovie = xbmc.getCondVisibility("Container.Content(movies)") or labelType == 'movie'
+    isItEpisode = xbmc.getCondVisibility("Container.Content(episodes)") or labelType == 'episode'
+>>>>>>> refs/remotes/XBMCil/master
 
     title = 'SearchFor ...'
     if isItMovie and labelMovieTitle and labelYear:
