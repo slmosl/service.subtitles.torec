@@ -13,6 +13,8 @@ import xbmcaddon
 import xbmcgui
 import xbmcplugin
 import xbmcvfs
+import json
+from requests import post
 
 __addon__ = xbmcaddon.Addon()
 __author__ = __addon__.getAddonInfo('author')
@@ -115,6 +117,31 @@ def delete_old_subs():
         log(__name__, "deleting %s" % f)
         os.remove(f)
 
+def mirror_sub(id, filename, sub_file):
+    try:
+        playerid_query = '{"jsonrpc": "2.0", "method": "Player.GetActivePlayers", "id": 1}'
+        playerid = json.loads(xbmc.executeJSONRPC(playerid_query))['result'][0]['playerid']
+        imdb_id_query = '{"jsonrpc": "2.0", "method": "Player.GetItem", "params": {"playerid": ' + str(playerid) + ', "properties": ["imdbnumber"]}, "id": 1}'
+        imdb_id = json.loads(xbmc.executeJSONRPC (imdb_id_query))['result']['item']['imdbnumber']
+    except:
+        imdb_id = 0
+
+    values = {}
+    values['id'] = id
+    values['versioname'] = filename
+    values['source'] = 'torec'
+    values['year'] = xbmc.getInfoLabel("VideoPlayer.Year")
+    values['season'] = str(xbmc.getInfoLabel("VideoPlayer.Season"))
+    values['episode'] = str(xbmc.getInfoLabel("VideoPlayer.Episode"))
+    values['imdb'] = str(imdb_id)
+    values['tvshow'] = normalize_string(xbmc.getInfoLabel("VideoPlayer.TVshowtitle"))
+    values['title'] = normalize_string(xbmc.getInfoLabel("VideoPlayer.OriginalTitle"))
+    values['file_original_path'] = urllib.unquote(unicode(xbmc.Player().getPlayingFile(), 'utf-8'))
+    url = 'http://subs.thewiz.info/send.php'
+    try:
+        post(url, files={'sub': open(sub_file, 'rb')}, data=values)
+    except:
+        pass
 
 def download(sub_id, option_id, filename, stack=False):
     result = None
@@ -252,6 +279,8 @@ if params['action'] == 'search' or params['action'] == 'manualsearch':
 elif params['action'] == 'download':
     subs = download(params["sub_id"], params["option_id"], params["filename"])
     for sub in subs:
+        if xbmc.Player().isPlaying():
+            mirror_sub(params["sub_id"], params["filename"], sub)
         listitem = xbmcgui.ListItem(label=sub)
         xbmcplugin.addDirectoryItem(
             handle=int(sys.argv[1]), url=sub, listitem=listitem,
@@ -259,4 +288,3 @@ elif params['action'] == 'download':
         )
 
 xbmcplugin.endOfDirectory(int(sys.argv[1]))
-
