@@ -117,17 +117,17 @@ class TorecGuestTokenGenerator():
         self.sub_id = sub_id
 
     def generate_ticket(self):
-        return self._gen_fake_encoded_ticket(self.sub_id, -90)
+        return self._gen_fake_encoded_ticket(self.sub_id, 90)
 
     def _gen_plain_ticket(self, sub_id, secs_ago):
         t = datetime.datetime.now() - datetime.timedelta(seconds=secs_ago)
-        st = t.strftime("%m/%d/%Y %X %p")
+        st = t.strftime("%m/%d/%Y %-I:%M:%S %p")
         st = re.sub("(^|/| )0", r"\1", st)
         return "{}_sub{}".format(st, sub_id)
 
     def _encode_ticket(self, plain_ticket):
         return ''.join(
-            hex(ord(p) + ord(o))[2:].upper()
+            format(ord(p) + ord(o), 'X')
             for p, o in zip(plain_ticket, itertools.cycle("imet"))
             )
 
