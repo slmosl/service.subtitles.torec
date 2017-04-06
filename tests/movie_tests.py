@@ -1,4 +1,5 @@
 import os
+import pdb
 import sys
 import time
 import rarfile
@@ -9,6 +10,7 @@ import unittest
 sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "/../resources/lib")
 
 from TorecSubtitlesDownloader import TorecSubtitlesDownloader
+from TorecSubtitlesDownloader import FirefoxURLHandler
 from SubtitleHelper import convert_to_utf
 
 class MovieTests(unittest.TestCase):
@@ -26,7 +28,6 @@ class MovieTests(unittest.TestCase):
 		item = {
 			'title': 'finding mori',
 		}
-
 		options = self.downloader.search_movie(item['title'])
 		self.assertIsNone(options)
 
@@ -40,14 +41,13 @@ class MovieTests(unittest.TestCase):
 
 		result                 = self.downloader.get_download_link(page_id, subtitle_id)
 		subtitleData, fileName = self.downloader.download(result)
+		pdb.set_trace()
 		self.assertIsNotNone(subtitleData)
 
 		self._assert_subtitle_data(subtitleData, fileName)
 
 	def _create_test_valid_item(self):
-		return {
-			'title': 'finding dory',
-		}
+		return { 'title': 'finding dory', }
 
 	def _assert_subtitle_data(self, subtitleData, fileName):
 		extension = os.path.splitext(fileName)[1]
@@ -74,4 +74,4 @@ class MovieTests(unittest.TestCase):
 			break
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.main(verbosity=2)

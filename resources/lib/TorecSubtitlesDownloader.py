@@ -12,6 +12,7 @@ import itertools
 import bs4
 
 import xbmc
+import xbmcaddon
 from SubtitleHelper import log
 
 class SubtitleOption(object):
@@ -94,20 +95,20 @@ class FirefoxURLHandler(object):
 
             )
         ]
+        self.__addon__ = xbmcaddon.Addon(id="service.subtitles.torec")
 
     def login(self):
-        username = __addon__.getSetting("username")
-        password = __addon__.getSetting("password")
+        username = self.__addon__.getSetting("username")
+        password = self.__addon__.getSetting("password")
         login_data_ = {
-            "ref": "/Default.asp?",
-            "Form": "True",
-            "site": "true",
+            "ref": "http://www.torec.net/",
+            "form": "true",
             "username": username,
             "password": password,
-            "login": "submit"
         }
         login_data = urllib.urlencode(login_data_)
-        login_url = "http://www.torec.net/login.asp"
+        # Replace number with random
+        login_url = 'http://www.torec.net/ajax/login/t7/loginProcess.asp?rnd={0}'.format('0.46673249283')
         response = self.opener.open(login_url, login_data)
         content = ''.join(response.readlines())
         return username in content
@@ -135,7 +136,9 @@ class TorecGuestTokenGenerator():
         return self._encode_ticket(self._gen_plain_ticket(sub_id, secs_ago))
 
 class TorecSubtitlesDownloader(FirefoxURLHandler):
-    MAXIMUM_WAIT_TIME_MSEC = 13 * 1000
+    # Disable the 13 sec waiting due to capcha as guest.
+    # Need to verify login before downloading
+    MAXIMUM_WAIT_TIME_MSEC = 1 * 1000
 
     DEFAULT_SEPERATOR = " "
     BASE_URL          = "http://www.xn--9dbf0cd.net"
@@ -147,6 +150,8 @@ class TorecSubtitlesDownloader(FirefoxURLHandler):
 
     def __init__(self):
         super(TorecSubtitlesDownloader, self).__init__()
+        if self.login() is False:
+            self.__addon__.openSettings()
 
     def _build_default_cookie(self, sub_id):
         current_time = datetime.datetime.now().strftime("%m/%d/%Y+%I:%M:%S+%p")
@@ -263,8 +268,8 @@ class TorecSubtitlesDownloader(FirefoxURLHandler):
                 "sub_id":     sub_id,
                 "code":       option_id,
                 "sh":         "yes",
-                "guest":      guest_token,
-                "timewaited": 13
+                "guest":      "",
+                "timewaited": "-1"
         })
 
         download_link  = None
