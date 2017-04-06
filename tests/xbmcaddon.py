@@ -1,3 +1,12 @@
 class Addon(object):
-	def getAddonInfo(self, type):
-		pass
+    def __init__(self, id=None):
+        pass
+
+    def getAddonInfo(self, type):
+        pass
+
+    def getSetting(self, type):
+        if type == "username": 
+            return "A"
+        elif type == "password" : 
+            return "X"
