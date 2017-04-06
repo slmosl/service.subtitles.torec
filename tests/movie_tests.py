@@ -18,18 +18,18 @@ class MovieTests(unittest.TestCase):
 	def setUpClass(self):
 		self.downloader  = TorecSubtitlesDownloader()
 
-	#def test_search_movie_sanity(self):
-	#	item    = self._create_test_valid_item()
-	#	options = self.downloader.search_movie(item['title'])
-	#	self.assertIsNotNone(options)
-	#	self.assertEqual(len(options), 22)
+	def test_search_movie_sanity(self):
+		item    = self._create_test_valid_item()
+		options = self.downloader.search_movie(item['title'])
+		self.assertIsNotNone(options)
+		self.assertEqual(len(options), 22)
 
-	#def test_search_inexisting_movie(self):
-	#	item = {
-	#		'title': 'finding mori',
-	#	}
-	#	options = self.downloader.search_movie(item['title'])
-	#	self.assertIsNone(options)
+	def test_search_inexisting_movie(self):
+		item = {
+			'title': 'finding mori',
+		}
+		options = self.downloader.search_movie(item['title'])
+		self.assertIsNone(options)
 
 	def test_download_movie_sanity(self):
 		item    = self._create_test_valid_item()
@@ -39,7 +39,6 @@ class MovieTests(unittest.TestCase):
 		page_id     = option.sub_id
 		subtitle_id = option.option_id
 
-		self.downloader.login()
 		result                 = self.downloader.get_download_link(page_id, subtitle_id)
 		subtitleData, fileName = self.downloader.download(result)
 		pdb.set_trace()
