@@ -95,11 +95,11 @@ class FirefoxURLHandler(object):
 
             )
         ]
+        self.__addon__ = xbmcaddon.Addon(id="service.subtitles.torec")
 
     def login(self):
-        __addon__ = xbmcaddon.Addon(id="service.subtitles.torec")
-        username = __addon__.getSetting("username")
-        password = __addon__.getSetting("password")
+        username = self.__addon__.getSetting("username")
+        password = self.__addon__.getSetting("password")
         login_data_ = {
             "ref": "http://www.torec.net/",
             "form": "true",
@@ -150,8 +150,8 @@ class TorecSubtitlesDownloader(FirefoxURLHandler):
 
     def __init__(self):
         super(TorecSubtitlesDownloader, self).__init__()
-        if login() is False:
-            __addon__.openSettings()
+        if self.login() is False:
+            self.__addon__.openSettings()
 
     def _build_default_cookie(self, sub_id):
         current_time = datetime.datetime.now().strftime("%m/%d/%Y+%I:%M:%S+%p")
