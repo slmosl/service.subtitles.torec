@@ -80,12 +80,12 @@ class FirefoxURLHandler(object):
     """
     def __init__(self):
         cookie = "torec.cookie"
-        cj = cookielib.MozillaCookieJar(cookie)
+        self.cj = cookielib.MozillaCookieJar(cookie)
 
         self.opener = urllib2.build_opener(
             urllib2.HTTPRedirectHandler(),
             urllib2.HTTPHandler(),
-            urllib2.HTTPCookieProcessor(cj)
+            urllib2.HTTPCookieProcessor(self.cj)
         )
         self.opener.addheaders = [
             (
@@ -111,6 +111,7 @@ class FirefoxURLHandler(object):
         login_url = 'http://www.torec.net/ajax/login/t7/loginProcess.asp?rnd={0}'.format('0.46673249283')
         response = self.opener.open(login_url, login_data)
         content = ''.join(response.readlines())
+        xbmc.log(content, 6)
         return username in content
 
 class TorecGuestTokenGenerator():
@@ -138,7 +139,7 @@ class TorecGuestTokenGenerator():
 class TorecSubtitlesDownloader(FirefoxURLHandler):
     # Disable the 13 sec waiting due to capcha as guest.
     # Need to verify login before downloading
-    MAXIMUM_WAIT_TIME_MSEC = 1 * 1000
+    #MAXIMUM_WAIT_TIME_MSEC = 500
 
     DEFAULT_SEPERATOR = " "
     BASE_URL          = "http://www.xn--9dbf0cd.net"
@@ -150,8 +151,7 @@ class TorecSubtitlesDownloader(FirefoxURLHandler):
 
     def __init__(self):
         super(TorecSubtitlesDownloader, self).__init__()
-        if self.login() is False:
-            self.__addon__.openSettings()
+        self.login()
 
     def _build_default_cookie(self, sub_id):
         current_time = datetime.datetime.now().strftime("%m/%d/%Y+%I:%M:%S+%p")
@@ -273,27 +273,25 @@ class TorecSubtitlesDownloader(FirefoxURLHandler):
         })
 
         download_link  = None
-        waited_msec    = 0.0
 
-        # Torec website may delay download up to 13 seconds
-        while (not xbmc.abortRequested) and (waited_msec < self.MAXIMUM_WAIT_TIME_MSEC):
-            response = self.opener.open("%s/ajax/sub/t7/downloadun.asp" % self.BASE_URL, encoded_params)
-            download_link = response.read()
+        response = self.opener.open("%s/ajax/sub/t7/downloadun.asp" % self.BASE_URL, encoded_params)
+        download_link = response.read()
 
-            if download_link and "sdls.asp" in download_link:
-                break
-        
-            xbmc.sleep(500)
-            waited_msec += 500
-        
-        log(__name__, "received link after sleeping %f seconds" % (waited_msec / 1000.0))
+        log(__name__, "received link: %s" % download_link)
 
         return download_link
-        
+
 
     def download(self, download_link):
-        if not download_link:
+        if not download_link or download_link == "Err":
             log(__name__, "no download link found")
+            __addon__ = xbmcaddon.Addon()
+            __addonname__ = __addon__.getAddonInfo('name')
+            __icon__ = __addon__.getAddonInfo('icon')
+            line1 = "Cound not download subtitle, try to login from the addon settings screen"
+            time = 5000 #in miliseconds
+            xbmc.executebuiltin('Notification(%s, %s, %d, %s)'%(__addonname__, line1, time, __icon__))
+
             return None, None
 
         response = self.opener.open(

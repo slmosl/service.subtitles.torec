@@ -5,6 +5,9 @@ class Addon(object):
     def getAddonInfo(self, type):
         pass
 
+    def openSetting(self):
+        print "Settings"
+
     def getSetting(self, type):
         if type == "username": 
             return "A"

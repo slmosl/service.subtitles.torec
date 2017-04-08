@@ -41,7 +41,6 @@ class MovieTests(unittest.TestCase):
 
 		result                 = self.downloader.get_download_link(page_id, subtitle_id)
 		subtitleData, fileName = self.downloader.download(result)
-		pdb.set_trace()
 		self.assertIsNotNone(subtitleData)
 
 		self._assert_subtitle_data(subtitleData, fileName)
