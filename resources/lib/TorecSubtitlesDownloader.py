@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import os
 import cookielib
 import datetime
 import re
@@ -81,12 +82,14 @@ class FirefoxURLHandler(object):
     """
     def __init__(self):
         cookie = "torec.cookie"
-        cj = cookielib.MozillaCookieJar(cookie)
+        self.cj = cookielib.LWPCookieJar(cookie)
+        if os.path.exists(cookie):
+            self.cj.load(ignore_discard=True)
 
         self.opener = urllib2.build_opener(
             urllib2.HTTPRedirectHandler(),
             urllib2.HTTPHandler(),
-            urllib2.HTTPCookieProcessor(cj)
+            urllib2.HTTPCookieProcessor(self.cj)
         )
         self.opener.addheaders = [
             (
@@ -96,11 +99,11 @@ class FirefoxURLHandler(object):
 
             )
         ]
+        self.__addon__ = xbmcaddon.Addon(id="service.subtitles.torec")
 
     def login(self):
-        __addon__ = xbmcaddon.Addon(id="service.subtitles.torec")
-        username = __addon__.getSetting("username")
-        password = __addon__.getSetting("password")
+        username = self.__addon__.getSetting("username")
+        password = self.__addon__.getSetting("password")
         log(__name__, "Checking if the user filled login credentials on Settings")
         if not username or not password:
             log(__name__, "No login creds, failing back to guest")
@@ -121,6 +124,7 @@ class FirefoxURLHandler(object):
         response = self.opener.open(login_url, login_data)
         content = ''.join(response.read())
         log(__name__, "Response: %s" % content)
+        self.cj.save(ignore_discard=True)
         return username in content
 
 class TorecGuestTokenGenerator():
@@ -319,6 +323,18 @@ class TorecSubtitlesDownloader(FirefoxURLHandler):
 
     def get_download_link(self, sub_id, option_id):
         self._confirm_download_code(sub_id, option_id)
+
+        # Checking if we have cookie - if so, we will try to use it
+        log(__name__, "Checking if we have cookie")
+        cookie_root = 'www.torec.net'
+        cookie_name = 'Torec%5FNC%5Fsite'
+        if cookie_root in self.cj._cookies and \
+           cookie_name in self.cj._cookies[cookie_root]['/'] and \
+           self.__addon__.getSetting("username") in self.cj._cookies[cookie_root]['/'][cookie_name].value:
+            log(__name__, "Cookie found. Trying to getting link")
+            download_link = self._try_get_download_link(sub_id, option_id, None, True)
+            if download_link:
+                return download_link
 
         # Checking if the user has credentials, if so - logging in and downloading,
         # If not (or the login failed) - failing back to guest user download
