@@ -8,10 +8,12 @@ import urllib2
 import zlib
 import json
 import itertools
+import random
 
 import bs4
 
 import xbmc
+import xbmcaddon
 from SubtitleHelper import log
 
 class SubtitleOption(object):
@@ -96,20 +98,29 @@ class FirefoxURLHandler(object):
         ]
 
     def login(self):
+        __addon__ = xbmcaddon.Addon(id="service.subtitles.torec")
         username = __addon__.getSetting("username")
         password = __addon__.getSetting("password")
+        log(__name__, "Checking if the user filled login credentials on Settings")
+        if not username or not password:
+            log(__name__, "No login creds, failing back to guest")
+            return False
+
+        log(__name__, "Settings filled with username and password, trying to login")
         login_data_ = {
-            "ref": "/Default.asp?",
-            "Form": "True",
-            "site": "true",
+            "form": "true",
             "username": username,
             "password": password,
-            "login": "submit"
         }
         login_data = urllib.urlencode(login_data_)
-        login_url = "http://www.torec.net/login.asp"
+        rnd_float = random.uniform(0.1, 0.9)
+        login_url = 'http://www.torec.net/ajax/login/t7/loginProcess.asp?rnd={0}'.format(rnd_float)
+        log(__name__, "Login URL: %s" % login_url)
+        # For debug, not for prod - will pring credentials to log.
+        #log(__name__, "Login params: %s" % login_data)
         response = self.opener.open(login_url, login_data)
-        content = ''.join(response.readlines())
+        content = ''.join(response.read())
+        log(__name__, "Response: %s" % content)
         return username in content
 
 class TorecGuestTokenGenerator():
@@ -267,13 +278,16 @@ class TorecSubtitlesDownloader(FirefoxURLHandler):
         response      = self.opener.open("%s/ajax/sub/t7/guest_dl_code.asp" % self.BASE_URL, urllib.urlencode(params))
         response_data = response.read()
 
-    def _try_get_download_link(self, sub_id, option_id, guest_token):
+    def _try_get_download_link(self, sub_id, option_id, guest_token, is_login=False):
+        if guest_token is None:
+            guest_token = ""
+
         encoded_params = urllib.urlencode({
                 "sub_id":     sub_id,
                 "code":       option_id,
                 "sh":         "yes",
                 "guest":      guest_token,
-                "timewaited": 13
+                "timewaited": -1 if is_login else 13
         })
 
         response = self.opener.open("%s/ajax/sub/t7/downloadun.asp" % self.BASE_URL, encoded_params)
@@ -305,6 +319,15 @@ class TorecSubtitlesDownloader(FirefoxURLHandler):
 
     def get_download_link(self, sub_id, option_id):
         self._confirm_download_code(sub_id, option_id)
+
+        # Checking if the user has credentials, if so - logging in and downloading,
+        # If not (or the login failed) - failing back to guest user download
+        log(__name__, "Trying to login")
+        if self.login():
+            log(__name__, "Logged in. Trying to getting link")
+            download_link = self._try_get_download_link(sub_id, option_id, None, True)
+            if download_link:
+                return download_link
 
         log(__name__, "trying to retrieve download link with skewed generated guest token")
         generated_time_skewed_guest_token = TorecGuestTokenGenerator(sub_id, True).generate_ticket()
