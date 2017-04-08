@@ -81,7 +81,11 @@ class FirefoxURLHandler(object):
     Firefox user agent class
     """
     def __init__(self):
-        cookie = "torec.cookie"
+        self.__addon__ = xbmcaddon.Addon(id="service.subtitles.torec")
+        self.__addonname__  = self.__addon__.getAddonInfo('id')
+
+        dataroot = xbmc.translatePath('special://profile/addon_data/%s' % self.__addonname__ ).decode('utf-8')
+        cookie = os.path.join(dataroot, "torec.cookie")
         self.cj = cookielib.LWPCookieJar(cookie)
         if os.path.exists(cookie):
             self.cj.load(ignore_discard=True)
@@ -99,7 +103,6 @@ class FirefoxURLHandler(object):
 
             )
         ]
-        self.__addon__ = xbmcaddon.Addon(id="service.subtitles.torec")
 
     def login(self):
         username = self.__addon__.getSetting("username")

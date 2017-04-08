@@ -3,6 +3,8 @@ class Addon(object):
         pass
 
     def getAddonInfo(self, type):
+        if type == "id":
+            return "Torec"
         pass
 
     def openSetting(self):
