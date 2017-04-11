@@ -324,9 +324,7 @@ class TorecSubtitlesDownloader(FirefoxURLHandler):
 
         return download_link
 
-    def get_download_link(self, sub_id, option_id):
-        self._confirm_download_code(sub_id, option_id)
-
+    def _get_download_link_with_login(self, sub_id, option_id):
         # Checking if we have cookie - if so, we will try to use it
         log(__name__, "Checking if we have cookie")
         cookie_root = 'www.torec.net'
@@ -334,7 +332,7 @@ class TorecSubtitlesDownloader(FirefoxURLHandler):
         if cookie_root in self.cj._cookies and \
            cookie_name in self.cj._cookies[cookie_root]['/'] and \
            self.__addon__.getSetting("username") in self.cj._cookies[cookie_root]['/'][cookie_name].value:
-            log(__name__, "Cookie found. Trying to getting link")
+            log(__name__, "Cookie found. Trying to get link")
             download_link = self._try_get_download_link(sub_id, option_id, None, True)
             if download_link:
                 return download_link
@@ -343,10 +341,20 @@ class TorecSubtitlesDownloader(FirefoxURLHandler):
         # If not (or the login failed) - failing back to guest user download
         log(__name__, "Trying to login")
         if self.login():
-            log(__name__, "Logged in. Trying to getting link")
+            log(__name__, "Logged in. Trying to get link")
             download_link = self._try_get_download_link(sub_id, option_id, None, True)
             if download_link:
                 return download_link
+
+        return None
+
+    def get_download_link(self, sub_id, option_id):
+        self._confirm_download_code(sub_id, option_id)
+
+        # Will try to download with logged in user
+        download_link = self._get_download_link_with_login(sub_id, option_id)
+        if download_link:
+            return download_link
 
         log(__name__, "trying to retrieve download link with skewed generated guest token")
         generated_time_skewed_guest_token = TorecGuestTokenGenerator(sub_id, True).generate_ticket()
